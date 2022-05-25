@@ -1,0 +1,143 @@
+There are two main steps that we need to follow in order to migrate from CentOS 7 to Rocky Linux 8.
+
+1. Upgrade CentOS 7 to CentOS 8
+2. Migrate from CentOS 8 to Rocky Linux
+
+
+Step 1. Gather System Information
+Get the necessary system information such as the kernel version and the version of the applications installed on the system.
+
+Upgrade and reboot CentOS 7
+  sudo yum -y update
+  sudo reboot
+
+Check the Kernel version
+  # uname -r
+    [output example don't copy 3.10.0-1160.36.2.el7.x86_64]
+
+Step 2. Install EPEL-Release
+Install Epel-release to allow you to download packages outside CentOS-Base repo.
+
+  sudo yum install epel-release -y
+
+Step 3. Install Packages
+Install the following packages that will be used in the upgrade process.
+
+  sudo yum install -y yum-utils rpmconf
+
+Step 4. Remove Unused and Conflicting Packages/Configuratons
+Locate and remove unused and conflicting packages from previous installations
+
+  sudo rpmconf -a
+
+List unneeded packages
+
+  sudo package-cleanup --leaves
+
+Get the list of duplicate packages
+
+  sudo package-cleanup --orphans
+
+Remove the packages from the above command’s output using the YUM command
+
+  sudo yum remove -y <package>
+
+Step 5. Upgrade from YUM to DNF
+Install DNF package manager, the default package manager for CentOS 8.
+
+  sudo yum install -y dnf
+
+Remove YUM package manager.
+
+  sudo dnf remove -y yum yum-metadata-parser
+
+Delete the YUM configurations
+
+  sudo rm -Rf /etc/yum
+
+Lastly, build cache for DNF repositories
+
+  sudo dnf -y makecache
+ 
+Step 6. Upgrade CentOS 7 Packages
+Upgrade CentOS packages before we can upgrade the server to CentOS 8.
+
+  sudo dnf upgrade -y
+  
+Step 7. Upgrade YUM repositories
+Upgrade YUM repositories from CentOS 7 to CentOS 8
+
+  sudo dnf install http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/Packages/{centos-linux-repos-8-3.el8.noarch.rpm,centos-linux-release-8.5-1.2111.el8.noarch.rpm,centos-gpg-keys-8-3.el8.noarch.rpm}
+
+Upgrade EPEL-Release repo.
+
+  sudo dnf upgrade -y epel-release
+  #OR
+  sudo dnf -y upgrade https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+Step 8. Upgrade CentOS 7 to CentOS 8
+Update CentOS 8 repositories:
+
+  cd /etc/yum.repos.d
+  sudo mkdir backups
+  sudo mv CentOS-* backups
+
+  # Create new for CentOS BaseOS repo
+  sudo tee CentOS-Linux-BaseOS.repo<<EOM
+  [baseos]
+  name=CentOS Linux \$releasever - BaseOS
+  baseurl=http://vault.centos.org/8.5.2111/BaseOS/\$basearch/os/
+  gpgcheck=1
+  enabled=1
+  gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  EOM
+
+  # Create new for CentOS AppStream repo
+  sudo tee CentOS-Linux-AppStream.repo<<EOM
+  [appstream]
+  name=CentOS Linux \$releasever - AppStream
+  baseurl=http://vault.centos.org/8.5.2111/AppStream/\$basearch/os/
+  gpgcheck=1
+  enabled=1
+  gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  EOM
+  
+  Remove the current CentOS Kernel
+  
+  sudo rpm -e `rpm -q kernel` --nodeps
+  sudo rpm -e `rpm -q kernel-devel` --nodeps
+  
+Remove all conflicting packages
+
+  sudo rpm -e --nodeps sysvinit-tools
+  
+Launch CentOS 8 system upgrade with the command below:
+
+  sudo dnf -y --releasever=8 --allowerasing --setopt=deltarpm=false distro-sync
+  
+Note: You may encounter conflicting packages errors. To solve them remove existing packages in question. I had to remove the following packages before upgrade could succeed.
+
+NetworkManager
+dracut-network
+python36-rpmconf
+Install the new CentOS 8 Kernel.
+
+  sudo dnf install -y kernel-core
+
+  #OR
+
+Install CentOS 8 minimal.
+
+  sudo dnf -y groupupdate "Core" "Minimal Install"
+
+
+After a successful installation, reboot your system to load the new kernel
+
+  sudo systemctl reboot
+  
+Verify that your system has upgraded successfully and that you still have your applications.
+
+  $ cat /etc/redhat-release
+  [example output: CentOS Linux release 8.5.2111]
+  
+With this, we can now confirm that we have successfully upgraded from CentOS 7 to CentOS 8. The next step will be to migrate from CentOS 8 to Rocky Linux 8 which can be found in a separate txt file.
