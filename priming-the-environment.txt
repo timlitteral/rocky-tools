@@ -120,6 +120,7 @@ Note: You may encounter conflicting packages errors. To solve them remove existi
 NetworkManager
 dracut-network
 python36-rpmconf
+
 Install the new CentOS 8 Kernel.
 
   sudo dnf install -y kernel-core
