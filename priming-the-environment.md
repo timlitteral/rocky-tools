@@ -141,4 +141,4 @@ Verify that your system has upgraded successfully and that you still have your a
   $ cat /etc/redhat-release
   [example output: CentOS Linux release 8.5.2111]
   
-With this, we can now confirm that we have successfully upgraded from CentOS 7 to CentOS 8. The next step will be to migrate from CentOS 8 to Rocky Linux.
+With this, we can now confirm that we have successfully upgraded from CentOS 7 to CentOS 8. The next step will be to migrate from CentOS 8 to Rocky Linux 8 which can be found in a separate txt file.
